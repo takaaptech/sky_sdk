@@ -16,18 +16,12 @@ class Rect {
       ..[3] = bottom;
   }
 
-  Rect.fromPointAndSize(Point point, Size size) {
+  Rect.fromLTWH(double left, double top, double width, double height) {
     _value
-      ..[0] = point.x
-      ..[1] = point.y
-      ..[2] = point.x + size.width
-      ..[3] = point.y + size.height;
-  }
-
-  Rect.fromSize(Size size) {
-    _value
-      ..[2] = size.width
-      ..[3] = size.height;
+      ..[0] = left
+      ..[1] = top
+      ..[2] = left + width
+      ..[3] = top + height;
   }
 
   final Float32List _value = new Float32List(4);
@@ -36,9 +30,11 @@ class Rect {
   double get right => _value[2];
   double get bottom => _value[3];
 
-  Point get upperLeft => new Point(left, top);
-  Point get lowerRight => new Point(right, bottom);
   Point get center => new Point(left + right / 2.0, top + bottom / 2.0);
+  Point get topLeft => new Point(left, top);
+  Point get topRight => new Point(right, top);
+  Point get bottomLeft => new Point(left, bottom);
+  Point get bottomRight => new Point(right, bottom);
 
   Size get size => new Size(right - left, bottom - top);
 
@@ -57,7 +53,6 @@ class Rect {
     }
     return true;
   }
-
   int get hashCode =>_value.fold(373, (value, item) => (37 * value + item.hashCode));
   String toString() => "Rect.fromLTRB($left, $top, $right, $bottom)";
 }

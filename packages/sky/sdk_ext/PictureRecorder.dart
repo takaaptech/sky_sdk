@@ -6,12 +6,13 @@
 part of dart.sky;
 
 class PictureRecorder extends
-    Canvas {
+    NativeFieldWrapperClass2 {
     // Constructors
-    void _constructor(double width, double height) native "PictureRecorder_constructorCallback";
-    PictureRecorder(double width, double height) { _constructor(width, height); }
+    void _constructor() native "PictureRecorder_constructorCallback";
+    PictureRecorder() { _constructor(); }
 
     // Attributes
+    bool get isRecording native "PictureRecorder_isRecording_Getter";
 
     // Methods
     Picture endRecording() native "PictureRecorder_endRecording_Callback";

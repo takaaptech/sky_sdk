@@ -14,11 +14,13 @@ class Point {
   static const Point origin = const Point(0.0, 0.0);
 
   bool operator ==(other) => other is Point && x == other.x && y == other.y;
-  Size operator -(Point other) => new Size(x - other.x, y - other.y);
-  Point operator +(Size size) => new Point(x + size.width, y + size.height);
+  Point operator -() => new Point(-x, -y);
+  Offset operator -(Point other) => new Offset(x - other.x, y - other.y);
+  Point operator +(Offset other) => new Point(x + other.dx, y + other.dy);
+  Rect operator &(Size other) => new Rect.fromLTWH(x, y, other.width, other.height);
 
-  // does the equivalent of "return this - Point(0,0)"
-  Size toSize() => new Size(x, y);
+  // does the equivalent of "return this - Point.origin"
+  Offset toOffset() => new Offset(x, y);
 
   int get hashCode {
     int result = 373;

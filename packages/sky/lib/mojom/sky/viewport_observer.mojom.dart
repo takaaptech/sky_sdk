@@ -144,26 +144,26 @@ class ViewportObserverOnInputEventParams extends bindings.Struct {
   }
 }
 
-class ViewportObserverLoadUrlParams extends bindings.Struct {
+class ViewportObserverRunFromNetworkParams extends bindings.Struct {
   static const List<bindings.StructDataHeader> kVersions = const [
     const bindings.StructDataHeader(16, 0)
   ];
   String url = null;
 
-  ViewportObserverLoadUrlParams() : super(kVersions.last.size);
+  ViewportObserverRunFromNetworkParams() : super(kVersions.last.size);
 
-  static ViewportObserverLoadUrlParams deserialize(bindings.Message message) {
+  static ViewportObserverRunFromNetworkParams deserialize(bindings.Message message) {
     var decoder = new bindings.Decoder(message);
     var result = decode(decoder);
     decoder.excessHandles.forEach((h) => h.close());
     return result;
   }
 
-  static ViewportObserverLoadUrlParams decode(bindings.Decoder decoder0) {
+  static ViewportObserverRunFromNetworkParams decode(bindings.Decoder decoder0) {
     if (decoder0 == null) {
       return null;
     }
-    ViewportObserverLoadUrlParams result = new ViewportObserverLoadUrlParams();
+    ViewportObserverRunFromNetworkParams result = new ViewportObserverRunFromNetworkParams();
 
     var mainDataHeader = decoder0.decodeStructDataHeader();
     if (mainDataHeader.version <= kVersions.last.version) {
@@ -197,14 +197,140 @@ class ViewportObserverLoadUrlParams extends bindings.Struct {
   }
 
   String toString() {
-    return "ViewportObserverLoadUrlParams("
+    return "ViewportObserverRunFromNetworkParams("
            "url: $url" ")";
+  }
+}
+
+class ViewportObserverRunFromFileParams extends bindings.Struct {
+  static const List<bindings.StructDataHeader> kVersions = const [
+    const bindings.StructDataHeader(24, 0)
+  ];
+  String main = null;
+  String packageRoot = null;
+
+  ViewportObserverRunFromFileParams() : super(kVersions.last.size);
+
+  static ViewportObserverRunFromFileParams deserialize(bindings.Message message) {
+    var decoder = new bindings.Decoder(message);
+    var result = decode(decoder);
+    decoder.excessHandles.forEach((h) => h.close());
+    return result;
+  }
+
+  static ViewportObserverRunFromFileParams decode(bindings.Decoder decoder0) {
+    if (decoder0 == null) {
+      return null;
+    }
+    ViewportObserverRunFromFileParams result = new ViewportObserverRunFromFileParams();
+
+    var mainDataHeader = decoder0.decodeStructDataHeader();
+    if (mainDataHeader.version <= kVersions.last.version) {
+      // Scan in reverse order to optimize for more recent versions.
+      for (int i = kVersions.length - 1; i >= 0; --i) {
+        if (mainDataHeader.version >= kVersions[i].version) {
+          if (mainDataHeader.size == kVersions[i].size) {
+            // Found a match.
+            break;
+          }
+          throw new bindings.MojoCodecError(
+              'Header size doesn\'t correspond to known version size.');
+        }
+      }
+    } else if (mainDataHeader.size < kVersions.last.size) {
+      throw new bindings.MojoCodecError(
+        'Message newer than the last known version cannot be shorter than '
+        'required by the last known version.');
+    }
+    if (mainDataHeader.version >= 0) {
+      
+      result.main = decoder0.decodeString(8, false);
+    }
+    if (mainDataHeader.version >= 0) {
+      
+      result.packageRoot = decoder0.decodeString(16, false);
+    }
+    return result;
+  }
+
+  void encode(bindings.Encoder encoder) {
+    var encoder0 = encoder.getStructEncoderAtOffset(kVersions.last);
+    
+    encoder0.encodeString(main, 8, false);
+    
+    encoder0.encodeString(packageRoot, 16, false);
+  }
+
+  String toString() {
+    return "ViewportObserverRunFromFileParams("
+           "main: $main" ", "
+           "packageRoot: $packageRoot" ")";
+  }
+}
+
+class ViewportObserverRunFromSnapshotParams extends bindings.Struct {
+  static const List<bindings.StructDataHeader> kVersions = const [
+    const bindings.StructDataHeader(16, 0)
+  ];
+  String path = null;
+
+  ViewportObserverRunFromSnapshotParams() : super(kVersions.last.size);
+
+  static ViewportObserverRunFromSnapshotParams deserialize(bindings.Message message) {
+    var decoder = new bindings.Decoder(message);
+    var result = decode(decoder);
+    decoder.excessHandles.forEach((h) => h.close());
+    return result;
+  }
+
+  static ViewportObserverRunFromSnapshotParams decode(bindings.Decoder decoder0) {
+    if (decoder0 == null) {
+      return null;
+    }
+    ViewportObserverRunFromSnapshotParams result = new ViewportObserverRunFromSnapshotParams();
+
+    var mainDataHeader = decoder0.decodeStructDataHeader();
+    if (mainDataHeader.version <= kVersions.last.version) {
+      // Scan in reverse order to optimize for more recent versions.
+      for (int i = kVersions.length - 1; i >= 0; --i) {
+        if (mainDataHeader.version >= kVersions[i].version) {
+          if (mainDataHeader.size == kVersions[i].size) {
+            // Found a match.
+            break;
+          }
+          throw new bindings.MojoCodecError(
+              'Header size doesn\'t correspond to known version size.');
+        }
+      }
+    } else if (mainDataHeader.size < kVersions.last.size) {
+      throw new bindings.MojoCodecError(
+        'Message newer than the last known version cannot be shorter than '
+        'required by the last known version.');
+    }
+    if (mainDataHeader.version >= 0) {
+      
+      result.path = decoder0.decodeString(8, false);
+    }
+    return result;
+  }
+
+  void encode(bindings.Encoder encoder) {
+    var encoder0 = encoder.getStructEncoderAtOffset(kVersions.last);
+    
+    encoder0.encodeString(path, 8, false);
+  }
+
+  String toString() {
+    return "ViewportObserverRunFromSnapshotParams("
+           "path: $path" ")";
   }
 }
 
 const int kViewportObserver_onViewportMetricsChanged_name = 0;
 const int kViewportObserver_onInputEvent_name = 1;
-const int kViewportObserver_loadUrl_name = 2;
+const int kViewportObserver_runFromNetwork_name = 2;
+const int kViewportObserver_runFromFile_name = 3;
+const int kViewportObserver_runFromSnapshot_name = 4;
 
 const String ViewportObserverName =
       'sky::ViewportObserver';
@@ -212,7 +338,9 @@ const String ViewportObserverName =
 abstract class ViewportObserver {
   void onViewportMetricsChanged(int width, int height, double devicePixelRatio);
   void onInputEvent(input_event_mojom.InputEvent event);
-  void loadUrl(String url);
+  void runFromNetwork(String url);
+  void runFromFile(String main, String packageRoot);
+  void runFromSnapshot(String path);
 
 }
 
@@ -269,11 +397,26 @@ class _ViewportObserverProxyCalls implements ViewportObserver {
       _proxyImpl.sendMessage(params, kViewportObserver_onInputEvent_name);
     }
   
-    void loadUrl(String url) {
+    void runFromNetwork(String url) {
       assert(_proxyImpl.isBound);
-      var params = new ViewportObserverLoadUrlParams();
+      var params = new ViewportObserverRunFromNetworkParams();
       params.url = url;
-      _proxyImpl.sendMessage(params, kViewportObserver_loadUrl_name);
+      _proxyImpl.sendMessage(params, kViewportObserver_runFromNetwork_name);
+    }
+  
+    void runFromFile(String main, String packageRoot) {
+      assert(_proxyImpl.isBound);
+      var params = new ViewportObserverRunFromFileParams();
+      params.main = main;
+      params.packageRoot = packageRoot;
+      _proxyImpl.sendMessage(params, kViewportObserver_runFromFile_name);
+    }
+  
+    void runFromSnapshot(String path) {
+      assert(_proxyImpl.isBound);
+      var params = new ViewportObserverRunFromSnapshotParams();
+      params.path = path;
+      _proxyImpl.sendMessage(params, kViewportObserver_runFromSnapshot_name);
     }
   
 }
@@ -366,10 +509,20 @@ class ViewportObserverStub extends bindings.Stub {
             message.payload);
         _impl.onInputEvent(params.event);
         break;
-      case kViewportObserver_loadUrl_name:
-        var params = ViewportObserverLoadUrlParams.deserialize(
+      case kViewportObserver_runFromNetwork_name:
+        var params = ViewportObserverRunFromNetworkParams.deserialize(
             message.payload);
-        _impl.loadUrl(params.url);
+        _impl.runFromNetwork(params.url);
+        break;
+      case kViewportObserver_runFromFile_name:
+        var params = ViewportObserverRunFromFileParams.deserialize(
+            message.payload);
+        _impl.runFromFile(params.main, params.packageRoot);
+        break;
+      case kViewportObserver_runFromSnapshot_name:
+        var params = ViewportObserverRunFromSnapshotParams.deserialize(
+            message.payload);
+        _impl.runFromSnapshot(params.path);
         break;
       default:
         throw new bindings.MojoCodecError("Unexpected message name");

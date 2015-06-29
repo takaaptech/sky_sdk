@@ -39,9 +39,12 @@ class RenderScaffold extends RenderBox {
       return;
     if (old != null)
       dropChild(old);
-    _slots[slot] = value;
-    if (value != null)
+    if (value == null) {
+      _slots.remove(slot);
+    } else {
+      _slots[slot] = value;
       adoptChild(value);
+    }
     markNeedsLayout();
   }
 
@@ -74,9 +77,8 @@ class RenderScaffold extends RenderBox {
 
   bool get sizedByParent => true;
   void performResize() {
-    size = constraints.constrain(Size.infinite);
-    assert(size.width < double.INFINITY);
-    assert(size.height < double.INFINITY);
+    size = constraints.biggest;
+    assert(!size.isInfinite);
   }
 
   // TODO(eseidel): These change based on device size!
@@ -118,18 +120,18 @@ class RenderScaffold extends RenderBox {
     if (_slots[ScaffoldSlots.floatingActionButton] != null) {
       RenderBox floatingActionButton = _slots[ScaffoldSlots.floatingActionButton];
       Size area = new Size(size.width - kButtonX, size.height - kButtonY);
-      floatingActionButton.layout(new BoxConstraints.loose(area));
+      floatingActionButton.layout(new BoxConstraints.loose(area), parentUsesSize: true);
       assert(floatingActionButton.parentData is BoxParentData);
       floatingActionButton.parentData.position = (area - floatingActionButton.size).toPoint();
     }
   }
 
-  void paint(RenderObjectDisplayList canvas) {
+  void paint(RenderCanvas canvas, Offset offset) {
     for (ScaffoldSlots slot in [ScaffoldSlots.body, ScaffoldSlots.statusBar, ScaffoldSlots.toolbar, ScaffoldSlots.floatingActionButton, ScaffoldSlots.drawer]) {
       RenderBox box = _slots[slot];
       if (box != null) {
         assert(box.parentData is BoxParentData);
-        canvas.paintChild(box, box.parentData.position);
+        canvas.paintChild(box, box.parentData.position + offset);
       }
     }
   }
@@ -139,7 +141,7 @@ class RenderScaffold extends RenderBox {
       RenderBox box = _slots[slot];
       if (box != null) {
         assert(box.parentData is BoxParentData);
-        if (new Rect.fromPointAndSize(box.parentData.position, box.size).contains(position)) {
+        if ((box.parentData.position & box.size).contains(position)) {
           if (box.hitTest(result, position: (position - box.parentData.position).toPoint()))
             return;
         }

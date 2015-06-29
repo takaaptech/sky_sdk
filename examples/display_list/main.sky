@@ -1,7 +1,0 @@
-<script>
-import 'custom_painting.dart';
-
-void main() {
-    doIt();
-}
-</script>

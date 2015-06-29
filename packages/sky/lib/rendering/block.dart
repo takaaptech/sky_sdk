@@ -18,22 +18,21 @@ class RenderBlock extends RenderBox with ContainerRenderObjectMixin<RenderBox, B
   RenderBlock({
     List<RenderBox> children
   }) {
-    if (children != null)
-      children.forEach((child) { add(child); });
+    addAll(children);
   }
 
-  void setParentData(RenderBox child) {
+  void setupParentData(RenderBox child) {
     if (child.parentData is! BlockParentData)
       child.parentData = new BlockParentData();
   }
 
   double getMinIntrinsicWidth(BoxConstraints constraints) {
     double width = 0.0;
-    BoxConstraints innerConstraints = new BoxConstraints(
-        minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
+    BoxConstraints innerConstraints = constraints.widthConstraints();
     RenderBox child = firstChild;
     while (child != null) {
       width = math.max(width, child.getMinIntrinsicWidth(innerConstraints));
+      assert(child.parentData is BlockParentData);
       child = child.parentData.nextSibling;
     }
     return width;
@@ -41,11 +40,11 @@ class RenderBlock extends RenderBox with ContainerRenderObjectMixin<RenderBox, B
 
   double getMaxIntrinsicWidth(BoxConstraints constraints) {
     double width = 0.0;
-    BoxConstraints innerConstraints = new BoxConstraints(
-        minWidth: constraints.minWidth, maxWidth: constraints.maxWidth);
+    BoxConstraints innerConstraints = constraints.widthConstraints();
     RenderBox child = firstChild;
     while (child != null) {
       width = math.max(width, child.getMaxIntrinsicWidth(innerConstraints));
+      assert(child.parentData is BlockParentData);
       child = child.parentData.nextSibling;
     }
     return width;
@@ -64,6 +63,7 @@ class RenderBlock extends RenderBox with ContainerRenderObjectMixin<RenderBox, B
       double childHeight = child.getMinIntrinsicHeight(innerConstraints);
       assert(childHeight == child.getMaxIntrinsicHeight(innerConstraints));
       height += childHeight;
+      assert(child.parentData is BlockParentData);
       child = child.parentData.nextSibling;
     }
     return height;
@@ -77,31 +77,33 @@ class RenderBlock extends RenderBox with ContainerRenderObjectMixin<RenderBox, B
     return _getIntrinsicHeight(constraints);
   }
 
+  double getDistanceToActualBaseline(TextBaseline baseline) {
+    return defaultGetDistanceToFirstActualBaseline(baseline);
+  }
+
   void performLayout() {
     assert(constraints is BoxConstraints);
     double width = constraints.constrainWidth(constraints.maxWidth);
-    bool usesChildSize = !constraints.hasTightHeight;
     BoxConstraints innerConstraints = _getInnerConstraintsForWidth(width);
     double y = 0.0;
     RenderBox child = firstChild;
     while (child != null) {
-      child.layout(innerConstraints, parentUsesSize: usesChildSize);
+      child.layout(innerConstraints, parentUsesSize: true);
       assert(child.parentData is BlockParentData);
       child.parentData.position = new Point(0.0, y);
       y += child.size.height;
       child = child.parentData.nextSibling;
     }
     size = new Size(width, constraints.constrainHeight(y));
-    assert(size.width < double.INFINITY);
-    assert(size.height < double.INFINITY);
+    assert(!size.isInfinite);
   }
 
   void hitTestChildren(HitTestResult result, { Point position }) {
     defaultHitTestChildren(result, position: position);
   }
 
-  void paint(RenderObjectDisplayList canvas) {
-    defaultPaint(canvas);
+  void paint(RenderCanvas canvas, Offset offset) {
+    defaultPaint(canvas, offset);
   }
 
 }

@@ -103,19 +103,23 @@ class RenderParagraph extends RenderBox {
   final sky.Document _document = new sky.Document();
   final sky.LayoutRoot _layoutRoot = new sky.LayoutRoot();
 
-  InlineBase _inline;
-  BoxConstraints _constraintsForCurrentLayout;
+  BoxConstraints _constraintsForCurrentLayout; // when null, we don't have a current layout
 
+  InlineBase _inline;
   InlineBase get inline => _inline;
   void set inline (InlineBase value) {
     if (_inline == value)
       return;
     _inline = value;
     _layoutRoot.rootElement.setChild(_inline._toDOM(_document));
+    _constraintsForCurrentLayout = null;
     markNeedsLayout();
   }
 
   void _layout(BoxConstraints constraints) {
+    assert(constraints != null);
+    if (_constraintsForCurrentLayout == constraints)
+      return; // already cached this layout
     _layoutRoot.maxWidth = constraints.maxWidth;
     _layoutRoot.minWidth = constraints.minWidth;
     _layoutRoot.minHeight = constraints.minHeight;
@@ -150,6 +154,16 @@ class RenderParagraph extends RenderBox {
     return _getIntrinsicHeight(constraints);
   }
 
+  double getDistanceToActualBaseline(TextBaseline baseline) {
+    assert(!needsLayout);
+    _layout(constraints);
+    sky.Element root = _layoutRoot.rootElement;
+    switch (baseline) {
+      case TextBaseline.alphabetic: return root.alphabeticBaseline;
+      case TextBaseline.ideographic: return root.ideographicBaseline;
+    }
+  }
+
   void performLayout() {
     _layout(constraints);
     sky.Element root = _layoutRoot.rootElement;
@@ -158,18 +172,20 @@ class RenderParagraph extends RenderBox {
                                           _applyFloatingPointHack(root.height)));
   }
 
-  void paint(RenderObjectDisplayList canvas) {
+  void paint(RenderCanvas canvas, Offset offset) {
     // Ideally we could compute the min/max intrinsic width/height with a
     // non-destructive operation. However, currently, computing these values
     // will destroy state inside the layout root. If that happens, we need to
     // get back the correct state by calling _layout again.
     //
-    // TODO(abarth): Make computing the min/max intrinsic width/height a
-    //               non-destructive operation.
-    if (_constraintsForCurrentLayout != constraints && constraints != null)
-      _layout(constraints);
-
+    // TODO(abarth): Make computing the min/max intrinsic width/height
+    // a non-destructive operation.
+    // TODO(ianh): Make LayoutRoot support a paint offset so we don't
+    // need to translate for each span of text.
+    _layout(constraints);
+    canvas.translate(offset.dx, offset.dy);
     _layoutRoot.paint(canvas);
+    canvas.translate(-offset.dx, -offset.dy);
   }
 
   // we should probably expose a way to do precise (inter-glpyh) hit testing

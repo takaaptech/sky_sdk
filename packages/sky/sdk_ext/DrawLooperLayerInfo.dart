@@ -16,7 +16,7 @@ class DrawLooperLayerInfo extends
     // Methods
     void setPaintBits(int bits) native "DrawLooperLayerInfo_setPaintBits_Callback";
     void setColorMode(TransferMode mode) native "DrawLooperLayerInfo_setColorMode_Callback";
-    void setOffset(Point offset) native "DrawLooperLayerInfo_setOffset_Callback";
+    void setOffset(Offset offset) native "DrawLooperLayerInfo_setOffset_Callback";
     void setPostTranslate(bool postTranslate) native "DrawLooperLayerInfo_setPostTranslate_Callback";
 
     // Operators

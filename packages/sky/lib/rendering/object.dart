@@ -4,13 +4,13 @@
 
 import 'dart:math' as math;
 import 'dart:sky' as sky;
-import 'dart:sky' show Point, Size, Rect, Color, Paint, Path;
+import 'dart:sky' show Point, Offset, Size, Rect, Color, Paint, Path;
 
 import '../base/hit_test.dart';
 import '../base/node.dart';
 import '../base/scheduler.dart' as scheduler;
 
-export 'dart:sky' show Point, Size, Rect, Color, Paint, Path;
+export 'dart:sky' show Point, Offset, Size, Rect, Color, Paint, Path;
 export '../base/hit_test.dart' show HitTestTarget, HitTestEntry, HitTestResult;
 
 
@@ -26,14 +26,11 @@ class ParentData {
   String toString() => '<none>';
 }
 
-const kLayoutDirections = 4;
+class RenderCanvas extends sky.Canvas {
+  RenderCanvas(sky.PictureRecorder recorder, Size bounds) : super(recorder, bounds);
 
-class RenderObjectDisplayList extends sky.PictureRecorder {
-  RenderObjectDisplayList(double width, double height) : super(width, height);
-  void paintChild(RenderObject child, Point position) {
-    translate(position.x, position.y);
-    child.paint(this);
-    translate(-position.x, -position.y);
+  void paintChild(RenderObject child, Point point) {
+    child.paint(this, point.toOffset());
   }
 }
 
@@ -50,7 +47,7 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
   // node out, and any other nodes who happen to know exactly what
   // kind of node that is.
   dynamic parentData; // TODO(ianh): change the type of this back to ParentData once the analyzer is cleverer
-  void setParentData(RenderObject child) {
+  void setupParentData(RenderObject child) {
     // override this to setup .parentData correctly for your class
     assert(!debugDoingLayout);
     assert(!debugDoingPaint);
@@ -63,7 +60,7 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
     assert(!debugDoingLayout);
     assert(!debugDoingPaint);
     assert(child != null);
-    setParentData(child);
+    setupParentData(child);
     super.adoptChild(child);
     markNeedsLayout();
   }
@@ -81,11 +78,20 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
   static List<RenderObject> _nodesNeedingLayout = new List<RenderObject>();
   static bool _debugDoingLayout = false;
   static bool get debugDoingLayout => _debugDoingLayout;
+  bool _debugDoingThisResize = false;
+  bool get debugDoingThisResize => _debugDoingThisResize;
+  bool _debugDoingThisLayout = false;
+  bool get debugDoingThisLayout => _debugDoingThisLayout;
+  static RenderObject _debugActiveLayout = null;
+  static RenderObject get debugActiveLayout => _debugActiveLayout;
+  bool _debugCanParentUseSize;
+  bool get debugCanParentUseSize => _debugCanParentUseSize;
   bool _needsLayout = true;
   bool get needsLayout => _needsLayout;
   RenderObject _relayoutSubtreeRoot;
   Constraints _constraints;
   Constraints get constraints => _constraints;
+  bool debugDoesMeetConstraints(); // override this in a subclass to verify that your state matches the constraints object
   bool debugAncestorsAlreadyMarkedNeedsLayout() {
     if (_relayoutSubtreeRoot == null)
       return true; // we haven't yet done layout even once, so there's nothing for us to do
@@ -153,7 +159,14 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
   void layoutWithoutResize() {
     try {
       assert(_relayoutSubtreeRoot == this);
+      _debugCanParentUseSize = false;
+      _debugDoingThisLayout = true;
+      RenderObject debugPreviousActiveLayout = _debugActiveLayout;
+      _debugActiveLayout = this;
       performLayout();
+      _debugActiveLayout = debugPreviousActiveLayout;
+      _debugDoingThisLayout = false;
+      _debugCanParentUseSize = null;
     } catch (e, stack) {
       print('Exception raised during layout of ${this}: ${e}');
       print(stack);
@@ -173,9 +186,20 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
       return;
     _constraints = constraints;
     _relayoutSubtreeRoot = relayoutSubtreeRoot;
-    if (sizedByParent)
+    _debugCanParentUseSize = parentUsesSize;
+    if (sizedByParent) {
+      _debugDoingThisResize = true;
       performResize();
+      _debugDoingThisResize = false;
+    }
+    _debugDoingThisLayout = true;
+    RenderObject debugPreviousActiveLayout = _debugActiveLayout;
+    _debugActiveLayout = this;
     performLayout();
+    _debugActiveLayout = debugPreviousActiveLayout;
+    _debugDoingThisLayout = false;
+    _debugCanParentUseSize = null;
+    assert(debugDoesMeetConstraints());
     _needsLayout = false;
     markNeedsPaint();
     assert(parent == this.parent); // TODO(ianh): Remove this once the analyzer is cleverer
@@ -219,7 +243,7 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
     assert(!debugDoingPaint);
     scheduler.ensureVisualUpdate();
   }
-  void paint(RenderObjectDisplayList canvas) { }
+  void paint(RenderCanvas canvas, Offset offset) { }
 
 
   // EVENTS
@@ -251,6 +275,8 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
 
 
   String toString([String prefix = '']) {
+    RenderObject debugPreviousActiveLayout = _debugActiveLayout;
+    _debugActiveLayout = null;
     String header = '${runtimeType}';
     if (_relayoutSubtreeRoot != null && _relayoutSubtreeRoot != this) {
       int count = 1;
@@ -266,7 +292,9 @@ abstract class RenderObject extends AbstractNode implements HitTestTarget {
     if (!attached)
       header += ' DETACHED';
     prefix += '  ';
-    return '${header}\n${debugDescribeSettings(prefix)}${debugDescribeChildren(prefix)}';
+    String result = '${header}\n${debugDescribeSettings(prefix)}${debugDescribeChildren(prefix)}';
+    _debugActiveLayout = debugPreviousActiveLayout;
+    return result;
   }
   String debugDescribeSettings(String prefix) => '${prefix}parentData: ${parentData}\n${prefix}constraints: ${constraints}\n';
   String debugDescribeChildren(String prefix) => '';
@@ -337,7 +365,6 @@ abstract class ContainerParentDataMixin<ChildType extends RenderObject> {
 }
 
 abstract class ContainerRenderObjectMixin<ChildType extends RenderObject, ParentDataType extends ContainerParentDataMixin<ChildType>> implements RenderObject {
-  // abstract class that has only InlineNode children
 
   bool _debugUltimatePreviousSiblingOf(ChildType child, { ChildType equals }) {
     assert(child.parentData is ParentDataType);
@@ -358,12 +385,17 @@ abstract class ContainerRenderObjectMixin<ChildType extends RenderObject, Parent
     return child == equals;
   }
 
+  int _childCount = 0;
+  int get childCount => _childCount;
+
   ChildType _firstChild;
   ChildType _lastChild;
   void _addToChildList(ChildType child, { ChildType before }) {
     assert(child.parentData is ParentDataType);
     assert(child.parentData.nextSibling == null);
     assert(child.parentData.previousSibling == null);
+    _childCount += 1;
+    assert(_childCount > 0);
     if (before == null) {
       // append at the end (_lastChild)
       child.parentData.previousSibling = _lastChild;
@@ -409,10 +441,17 @@ abstract class ContainerRenderObjectMixin<ChildType extends RenderObject, Parent
     adoptChild(child);
     _addToChildList(child, before: before);
   }
+  void addAll(List<ChildType> children) {
+    if (children != null)
+      for (ChildType child in children)
+        add(child);
+  }
   void _removeFromChildList(ChildType child) {
     assert(child.parentData is ParentDataType);
     assert(_debugUltimatePreviousSiblingOf(child, equals: _firstChild));
     assert(_debugUltimateNextSiblingOf(child, equals: _lastChild));
+    _childCount -= 1;
+    assert(_childCount >= 0);
     if (child.parentData.previousSibling == null) {
       assert(_firstChild == child);
       _firstChild = child.parentData.nextSibling;

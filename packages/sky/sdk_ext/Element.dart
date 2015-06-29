@@ -39,6 +39,8 @@ class Element extends
     void set minContentWidth(double value) native "Element_minContentWidth_Setter";
     double get maxContentWidth native "Element_maxContentWidth_Getter";
     void set maxContentWidth(double value) native "Element_maxContentWidth_Setter";
+    double get alphabeticBaseline native "Element_alphabeticBaseline_Getter";
+    double get ideographicBaseline native "Element_ideographicBaseline_Getter";
 
     // Methods
     bool hasAttribute(String name) native "Element_hasAttribute_Callback";
@@ -46,7 +48,6 @@ class Element extends
     void setAttribute(String name, [String value = ""]) native "Element_setAttribute_Callback";
     void removeAttribute(String name) native "Element_removeAttribute_Callback";
     List<Attr> getAttributes() native "Element_getAttributes_Callback";
-    void requestPaint(PaintingCallback callback) native "Element_requestPaint_Callback";
     void setNeedsLayout() native "Element_setNeedsLayout_Callback";
     void layout() native "Element_layout_Callback";
     void setLayoutManager(LayoutCallback layout, LayoutCallback computeIntrinsicWidths) native "Element_setLayoutManager_Callback";
